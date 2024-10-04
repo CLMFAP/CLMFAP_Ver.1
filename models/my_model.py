@@ -68,23 +68,23 @@ class GraphEncoder(nn.Module):
         self.hidden_size = 768
         self.fc_hidden = nn.Linear(self.num_features, self.hidden_size)
 
-    def forward(self, mol, bi_graph_datas=None):
-        if self.graph_model == 'bi_bi_graph_mpnn' or self.graph_model == 'no_bi_graph_mpnn' or self.graph_model=='original_bi_graph_mpnn':
+    def forward(self, mol, graph_datas=None):
+        if self.graph_model == 'bi_attn_graph_mpnn' or self.graph_model == 'no_graph_only_mpnn' or self.graph_model=='original_attn_graph_mpnn':
             graph_feats, node_feats, node_feats_mask = self.graph2d_encoder(mol)
         # concatenated = graph_feats
-        if self.graph_model == 'bi_bi_graph_mpnn' or self.graph_model == 'original_bi_graph_no_mpnn' or self.graph_model=='original_bi_graph_mpnn' or self.graph_model=='bi_bi_graph_no_mpnn' or self.graph_model=='bi_bi_graph_no_mpnn':
-            bi_graph_datas["x"].to("cuda:0")
-            bi_graph_datas["in_degree"].to("cuda:0")
-            bi_graph_datas["out_degree"].to("cuda:0")
-            bi_graph_datas["attn_bias"].to("cuda:0")
-            bi_graph_datas["spatial_pos"].to("cuda:0")
-            bi_graph_datas["edge_input"].to("cuda:0")
-            bi_graph_datas["attn_edge_type"].to("cuda:0")
-            bi_graph_output = self.bi_graph(bi_graph_datas)
+        if self.graph_model == 'bi_attn_graph_mpnn' or self.graph_model == 'original_attn_graph_no_mpnn' or self.graph_model=='original_attn_graph_mpnn' or self.graph_model=='bi_attn_graph_no_mpnn' or self.graph_model=='bi_attn_graph_no_mpnn':
+            graph_datas["x"].to("cuda:0")
+            graph_datas["in_degree"].to("cuda:0")
+            graph_datas["out_degree"].to("cuda:0")
+            graph_datas["attn_bias"].to("cuda:0")
+            graph_datas["spatial_pos"].to("cuda:0")
+            graph_datas["edge_input"].to("cuda:0")
+            graph_datas["attn_edge_type"].to("cuda:0")
+            bi_graph_output = self.bi_graph(graph_datas)
             # print(f"After bi_graph, output size: {bi_graph_output.shape}")
             bi_graph_output_flat = bi_graph_output.squeeze(-1)
             # print(f"After bi_graph, post process 1: {bi_graph_output_flat.shape}")
-            if self.graph_model == 'bi_bi_graph_mpnn' or self.graph_model=='bi_bi_graph_no_mpnn':
+            if self.graph_model == 'bi_attn_graph_mpnn' or self.graph_model=='bi_attn_graph_no_mpnn':
                 bi_graph_output_flat = bi_graph_output_flat.squeeze(1)
             #     bi_graph_output_flat = bi_graph_output_flat.transpose(0,1)
             # print(f"After bi_graph, post process 2: {bi_graph_output_flat.shape}")
@@ -94,12 +94,12 @@ class GraphEncoder(nn.Module):
             # print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
             # Concatenate along the feature dimension (dimension 1)
         
-        if self.graph_model == 'bi_bi_graph_mpnn' or self.graph_model=='original_bi_graph_mpnn':
+        if self.graph_model == 'bi_attn_graph_mpnn' or self.graph_model=='original_attn_graph_mpnn':
             return torch.cat((graph_feats, tensor2_expanded), dim=1)
-        elif self.graph_model == 'original_bi_graph_no_mpnn' or self.graph_model=='bi_bi_graph_no_mpnn':
-            # print(len(bi_graph_datas["x"]))
+        elif self.graph_model == 'original_attn_graph_no_mpnn' or self.graph_model=='bi_attn_graph_no_mpnn':
+            # print(len(graph_datas["x"]))
             return tensor2_expanded
-        elif self.graph_model == 'no_bi_graph_mpnn':
+        elif self.graph_model == 'no_graph_only_mpnn':
             return graph_feats
 
 

@@ -42,7 +42,7 @@
     "pretrain": {
         "batch_size": 8,
         "num_workers": 4,
-        "epochs": 24,
+        "epochs": 20,
         "lr_start": 1e-4,
         "d_dropout": 0
     },
@@ -67,10 +67,10 @@
         "projection_dim": 256
     },
     "pretrained_model": {
-        "bi_bi_graph_mpnn":{"path":"result/pretrain_result_bi_bi_graph_mpnn_save/checkpoint_20.ckpt"},
-        "bi_bi_graph_no_mpnn":{"path":"result/pretrain_result_bi_bi_graph_no_mpnn/checkpoint_20.ckpt"},
-        "no_bi_graph_mpnn":{"path":"result/pretrain_result_no_bi_graph_mpnn_save/checkpoint_20.ckpt"},
-        "original_bi_graph_mpnn":{"path":"result/pretrain_result_original_bi_graph_mpnn_save/checkpoint_20.ckpt"},
-        "original_bi_graph_no_mpnn":{"path":"result/pretrain_result_original_bi_graph_no_mpnn_save/checkpoint_20.ckpt"}
+        "bi_attn_graph_mpnn":{"path":"result/pretrain_result_bi_attn_graph_mpnn_save/checkpoint_20.ckpt"},
+        "bi_attn_graph_no_mpnn":{"path":"result/pretrain_result_bi_attn_graph_no_mpnn/checkpoint_20.ckpt"},
+        "no_graph_only_mpnn":{"path":"result/pretrain_result_no_graph_only_mpnn_save/checkpoint_20.ckpt"},
+        "original_attn_graph_mpnn":{"path":"result/pretrain_result_original_attn_graph_mpnn_save/checkpoint_20.ckpt"},
+        "original_attn_graph_no_mpnn":{"path":"result/pretrain_result_original_attn_graph_no_mpnn_save/checkpoint_20.ckpt"}
     }
 }

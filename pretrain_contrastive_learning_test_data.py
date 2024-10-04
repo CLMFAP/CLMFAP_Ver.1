@@ -30,7 +30,7 @@ import regex as re
 # Define the Model
 # from args import args
 import argparse
-from models.pubchem_encoder import Encoder
+from models.encoder import Encoder
 import math
 
 
@@ -76,10 +76,7 @@ class CombinedMoleculeDataset(Dataset):
         print("Loading data...")
         self.encodings = self.text_encoder.process(self.smiles_list)
         self.fingerprints = generate_fingerprints(self.smiles_list)
-        if main_args.graph_model == 'bi_bi_graph_mpnn' or main_args.graph_model == 'original_bi_graph_no_mpnn' or main_args.graph_model=='original_bi_graph_mpnn' or main_args.graph_model=='bi_bi_graph_no_mpnn' or main_args.graph_model=='only_original_bi_graph':
-            self.graphs, self.bi_graph_datas = generate_3d_graphs(self.smiles_list)
-        elif main_args.graph_model == 'no_graphno_bi_graph_mpnnormer':
-            self.graphs = generate_3d_graphs_no_bi_graph(self.smiles_list)
+        self.graphs = generate_3d_graphs_no_bi_graph(self.smiles_list)
 
     def __len__(self):
         return len(self.encodings[0])
@@ -90,9 +87,7 @@ class CombinedMoleculeDataset(Dataset):
 
         item["fingerprints"] = self.fingerprints[idx]
         item["graphs"] = self.graphs[idx]
-        if main_args.graph_model == 'bi_bi_graph_mpnn' or main_args.graph_model == 'original_bi_graph_no_mpnn' or main_args.graph_model=='original_bi_graph_mpnn' or main_args.graph_model=='bi_bi_graph_no_mpnn' or main_args.graph_model=='only_original_bi_graph':
-            self.bi_graph_datas[idx].idx = idx
-            item["bi_graph_datas"] = self.bi_graph_datas[idx]
+        item["graph_datas"] = self.graph_datas[idx]
         return item
 
 class MolecularEmbeddingModel(nn.Module):
@@ -107,13 +102,11 @@ class MolecularEmbeddingModel(nn.Module):
         # self.cls_embedding = nn.Linear(
         #     self.bert.hidden_size, 128
         # )  # Added to match combined embedding size
-        if main_args.graph_model == 'bi_bi_graph_mpnn' or main_args.graph_model=='original_bi_graph_mpnn':
-            self.mid_liner_graph = nn.Linear(2 * 768, 1 * 768)
-        elif main_args.graph_model == 'no_bi_graph_mpnn' or main_args.graph_model == 'original_bi_graph_no_mpnn' or main_args.graph_model=='bi_bi_graph_no_mpnn':
+        if main_args.graph_model == 'no_graph_only_mpnn':
             self.mid_liner_graph = nn.Linear(1 * 768, 1 * 768)
 
 
-    def forward(self, input_ids, fingerprints, graphs, bi_graph_datas=None):
+    def forward(self, input_ids, fingerprints, graphs, graph_datas=None):
 
         # Smiles embedding
         logits = self.bert(input_ids)
@@ -123,9 +116,7 @@ class MolecularEmbeddingModel(nn.Module):
         fp_embedding = self.fp_embedding(fingerprints)
 
         # 3D Graph embedding
-        if main_args.graph_model == 'bi_bi_graph_mpnn' or main_args.graph_model == 'original_bi_graph_no_mpnn' or main_args.graph_model=='original_bi_graph_mpnn' or main_args.graph_model=='bi_bi_graph_no_mpnn':
-            graph_embedding = self.graph_embedding(graphs, bi_graph_datas)
-        elif main_args.graph_model == 'no_bi_graph_mpnn':
+        if main_args.graph_model == 'no_graph_only_mpnn':
             graph_embedding = self.graph_embedding(graphs)
         graph_embedding = self.mid_liner_graph(graph_embedding)
 
@@ -225,88 +216,7 @@ def load_cluster_data(cluster_data):
 
     return train_dataloader, valid_dataloader
 
-def train_bi_bi_graph(model, df, optimizer, epochs=10):
-    model.train()
-    # df = []
-    loss_file = open(f"{result_path}/pretrain_loss.txt", "a")
-    for epoch in range(8,epochs):
-        torch.cuda.empty_cache()
-        total_loss = 0.0
-
-        total_data_size = len(df)
-        cluster_size = 10000
-        total_clusters = math.ceil(total_data_size / cluster_size)
-        for i in range(0,total_data_size, cluster_size):
-            current_cluster = i // cluster_size
-            start_idx = i
-            end_idx = min(i+cluster_size, total_data_size)
-            cluster_data = df[start_idx:end_idx]
-            train_dataloader, valid_dataloader = load_cluster_data(cluster_data)
-
-            for batch in tqdm(train_dataloader):
-                input_ids = batch["input_ids"]
-                # attention_mask = batch["attention_mask"]
-                fingerprints = batch["fingerprints"]
-                graphs = batch["graphs"]
-                
-                bi_graph_datas = batch["bi_graph_datas"]
-                # if torch.cuda.is_available():
-                input_ids = input_ids.to(device)
-                fingerprints = fingerprints.to(device)
-                # attention_mask = attention_mask.to("cuda")
-                graphs = graphs.to(device)
-
-                optimizer.zero_grad()
-
-                cls_output, fp_embedding, graph_embedding = model(
-                    input_ids, fingerprints, graphs, bi_graph_datas
-                )
-
-
-                loss = contrastive_loss(cls_output, fp_embedding, graph_embedding)
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-                optimizer.step()
-
-                total_loss += loss.item()
-
-            avg_loss = total_loss / len(train_dataloader)
-            print(f"Epoch {epoch+1}/{epochs}; Cluster {current_cluster}/{total_clusters}: Loss: {avg_loss}")
-            loss_file.write(str(avg_loss) + "\n")
-            if epoch % 4 == 0:
-                total_loss = 0.0
-                for batch in tqdm(valid_dataloader):
-                    input_ids = batch["input_ids"]
-                    fingerprints = batch["fingerprints"]
-                    graphs = batch["graphs"]
-                    
-                    bi_graph_datas = batch["bi_graph_datas"]
-                    # if torch.cuda.is_available():
-                    input_ids = input_ids.to(device)
-                    fingerprints = fingerprints.to(device)
-                    graphs = graphs.to(device)
-
-                    optimizer.zero_grad()
-
-                   
-                    cls_output, fp_embedding, graph_embedding = model(
-                        input_ids, fingerprints, graphs, bi_graph_datas
-                    )
-
-
-                    loss = contrastive_loss(cls_output, fp_embedding, graph_embedding)
-
-                    total_loss += loss.item()
-                avg_loss = total_loss / len(valid_dataloader)
-                print(f"Validation Epoch {epoch+1}/{epochs}; Cluster {current_cluster}/{total_clusters}: Loss: {avg_loss}")
-
-            if epoch % 4 == 0:
-                torch.save(
-                    model.state_dict(),
-                    f"{result_path}/checkpoint_{epoch}.ckpt",
-                )
-
-def train_no_bi_graph(model, train_dataloader, valid_dataloader, optimizer, epochs=10):
+def train(model, train_dataloader, valid_dataloader, optimizer, epochs=10):
     model.train()
     # df = []
     loss_file = open(f"{result_path}/pretrain_loss.txt", "a")
@@ -319,20 +229,12 @@ def train_no_bi_graph(model, train_dataloader, valid_dataloader, optimizer, epoc
             # attention_mask = batch["attention_mask"]
             fingerprints = batch["fingerprints"]
             graphs = batch["graphs"]
-            # if main_args.graph_model == 'bi_bi_graph_mpnn':
-            #     bi_graph_datas = batch["bi_graph_datas"]
-            # if torch.cuda.is_available():
             input_ids = input_ids.to(device)
             fingerprints = fingerprints.to(device)
             # attention_mask = attention_mask.to("cuda")
             graphs = graphs.to(device)
 
             optimizer.zero_grad()
-            # if main_args.graph_model == 'bi_bi_graph_mpnn':
-            #     cls_output, fp_embedding, graph_embedding = model(
-            #         input_ids, fingerprints, graphs, bi_graph_datas
-            #     )
-            # elif main_args.graph_model == 'no_bi_graph_mpnn':
             cls_output, fp_embedding, graph_embedding = model(
                 input_ids, fingerprints, graphs
             )
@@ -345,7 +247,6 @@ def train_no_bi_graph(model, train_dataloader, valid_dataloader, optimizer, epoc
             total_loss += loss.item()
 
         avg_loss = total_loss / len(train_dataloader)
-        print(f"Epoch {epobi_bi_graph_no_mpnnch+1}/{epochs}: Loss: {avg_loss}")
         loss_file.write(str(avg_loss) + "\n")
         if epoch % 4 == 0:
             total_loss = 0.0
@@ -353,20 +254,11 @@ def train_no_bi_graph(model, train_dataloader, valid_dataloader, optimizer, epoc
                 input_ids = batch["input_ids"]
                 fingerprints = batch["fingerprints"]
                 graphs = batch["graphs"]
-                # if main_args.graph_model == 'bi_bi_graph_mpnn':
-                    # bi_graph_datas = batch["bi_graph_datas"]
-                # if torch.cuda.is_available():
                 input_ids = input_ids.to(device)
                 fingerprints = fingerprints.to(device)
                 graphs = graphs.to(device)
 
                 optimizer.zero_grad()
-
-                # if main_args.graph_model == 'bi_bi_graph_mpnn':
-                #     cls_output, fp_embedding, graph_embedding = model(
-                #         input_ids, fingerprints, graphs, bi_graph_datas
-                #     )
-                # elif main_args.graph_model == 'no_bi_graph_mpnn':
                 cls_output, fp_embedding, graph_embedding = model(
                     input_ids, fingerprints, graphs
                 )
@@ -383,47 +275,6 @@ def train_no_bi_graph(model, train_dataloader, valid_dataloader, optimizer, epoc
                 f"{result_path}/checkpoint_{epoch}.ckpt",
             )
 
-
-def train_only_bi_graph(model, df, optimizer, epochs=10):
-    model.train()
-    # df = []
-    loss_file = open(f"{result_path}/pretrain_loss.txt", "a")
-    for epoch in range(epochs):
-        torch.cuda.empty_cache()
-        total_loss = 0.0
-
-        total_data_size = len(df)
-        cluster_size = 10000
-        total_clusters = math.ceil(total_data_size / cluster_size)
-        for i in range(0,total_data_size, cluster_size):
-            current_cluster = i // cluster_size
-            start_idx = i
-            end_idx = min(i+cluster_size, total_data_size)
-            cluster_data = df[start_idx:end_idx]
-            train_dataloader, valid_dataloader = load_cluster_data(cluster_data)
-
-            for batch in tqdm(train_dataloader):
-                input_ids = batch["input_ids"]
-                # attention_mask = batch["attention_mask"]
-                fingerprints = batch["fingerprints"]
-                graphs = batch["graphs"]
-                
-                bi_graph_datas = batch["bi_graph_datas"]
-                # if torch.cuda.is_available():
-                input_ids = input_ids.to(device)
-                fingerprints = fingerprints.to(device)
-                # attention_mask = attention_mask.to("cuda")
-                graphs = graphs.to(device)
-
-                optimizer.zero_grad()
-
-                print(bi_graph_datas)
-
-                cls_output, fp_embedding, graph_embedding = model(
-                    input_ids, fingerprints, graphs, bi_graph_datas
-                )
-
-
 def custom_collate_fn(batch):
     collated_batch = {}
     elem_keys = batch[0].keys()
@@ -433,9 +284,9 @@ def custom_collate_fn(batch):
         if key in ["graphs"]:
             molecule_batch = Batch.from_data_list([elem[key] for elem in batch])
             collated_batch[key] = molecule_batch
-        elif key in ["bi_graph_datas"]:
-            bi_graph_datas = collator([elem[key] for elem in batch])
-            collated_batch[key] = bi_graph_datas
+        elif key in ["graph_datas"]:
+            graph_datas = collator([elem[key] for elem in batch])
+            collated_batch[key] = graph_datas
         else:
             padded_data = torch.stack([elem[key] for elem in batch])
             padded_data = padded_data.squeeze(1)
@@ -458,73 +309,44 @@ def weights_init(m):
 
 model = MolecularEmbeddingModel()
 # model.apply(weights_init)
-if main_args.graph_model == 'bi_bi_graph_mpnn' or main_args.graph_model=='original_bi_graph_mpnn':
-    # model.load_state_dict(
-    #     torch.load(f"result/pretrain_result_bi_bi_graph/checkpoint_16.ckpt"), strict=False
-    # )
+train_val_data, test_data = train_test_split(
+    smiles_list, test_size=0.2, random_state=42
+)
 
-    if torch.cuda.is_available():
-        model = model.cuda()
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["pretrain"]["lr_start"])
+# Split train+validation into train and validation data
+train_data, valid_data = train_test_split(
+    train_val_data, test_size=0.25, random_state=42
+)
 
-    train_bi_bi_graph(model, smiles_list, optimizer, epochs=config["pretrain"]["epochs"])
-elif main_args.graph_model == 'original_bi_graph_no_mpnn' or main_args.graph_model=='bi_bi_graph_no_mpnn':
-    model.load_state_dict(
-        torch.load(f"result/pretrain_result_bi_bi_graph_no_mpnn/checkpoint_8.ckpt"), strict=False
-    )
+# Create dataset and dataloader
+train_dataset = CombinedMoleculeDataset(data=train_data)
+test_dataset = CombinedMoleculeDataset(data=test_data)
+valid_dataset = CombinedMoleculeDataset(data=valid_data)
 
-    if torch.cuda.is_available():
-        model = model.cuda()
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["pretrain"]["lr_start"])
+train_dataloader = DataLoader(
+    train_dataset,
+    batch_size=config["pretrain"]["batch_size"],
+    shuffle=True,
+    collate_fn=custom_collate_fn,
+    num_workers=config["pretrain"]["num_workers"],
+)
+test_dataloader = DataLoader(
+    test_dataset,
+    batch_size=config["pretrain"]["batch_size"],
+    shuffle=True,
+    collate_fn=custom_collate_fn,
+    num_workers=config["pretrain"]["num_workers"],
+)
+valid_dataloader = DataLoader(
+    valid_dataset,
+    batch_size=config["pretrain"]["batch_size"],
+    shuffle=True,
+    collate_fn=custom_collate_fn,
+    num_workers=config["pretrain"]["num_workers"],
+)
 
-    train_bi_bi_graph(model, smiles_list, optimizer, epochs=config["pretrain"]["epochs"])
-elif main_args.graph_model == 'no_bi_graph_mpnn':
-    train_val_data, test_data = train_test_split(
-        smiles_list, test_size=0.2, random_state=42
-    )
+if torch.cuda.is_available():
+    model = model.cuda()
+optimizer = torch.optim.Adam(model.parameters(), lr=config["pretrain"]["lr_start"])
 
-    # Split train+validation into train and validation data
-    train_data, valid_data = train_test_split(
-        train_val_data, test_size=0.25, random_state=42
-    )
-
-    # Create dataset and dataloader
-    train_dataset = CombinedMoleculeDataset(data=train_data)
-    test_dataset = CombinedMoleculeDataset(data=test_data)
-    valid_dataset = CombinedMoleculeDataset(data=valid_data)
-
-    train_dataloader = DataLoader(
-        train_dataset,
-        batch_size=config["pretrain"]["batch_size"],
-        shuffle=True,
-        collate_fn=custom_collate_fn,
-        num_workers=config["pretrain"]["num_workers"],
-    )
-    test_dataloader = DataLoader(
-        test_dataset,
-        batch_size=config["pretrain"]["batch_size"],
-        shuffle=True,
-        collate_fn=custom_collate_fn,
-        num_workers=config["pretrain"]["num_workers"],
-    )
-    valid_dataloader = DataLoader(
-        valid_dataset,
-        batch_size=config["pretrain"]["batch_size"],
-        shuffle=True,
-        collate_fn=custom_collate_fn,
-        num_workers=config["pretrain"]["num_workers"],
-    )
-
-    if torch.cuda.is_available():
-        model = model.cuda()
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["pretrain"]["lr_start"])
-
-    train_no_bi_graph(model, train_dataloader, valid_dataloader, optimizer, epochs=config["pretrain"]["epochs"])
-
-elif main_args.graph_model=='only_original_bi_graph':
-
-    if torch.cuda.is_available():
-        model = model.cuda()
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["pretrain"]["lr_start"])
-
-    train_only_bi_graph(model, smiles_list, optimizer, epochs=config["pretrain"]["epochs"])
+train(model, train_dataloader, valid_dataloader, optimizer, epochs=config["pretrain"]["epochs"])

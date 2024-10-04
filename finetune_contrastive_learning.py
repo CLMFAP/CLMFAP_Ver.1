@@ -30,7 +30,7 @@ import regex as re
 # Define the Model
 from args import *
 import argparse
-from models.pubchem_encoder import Encoder
+from models.encoder import Encoder
 
 warnings.filterwarnings("ignore")
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -71,14 +71,11 @@ class CombinedMoleculeDataset(Dataset):
         print("Loading data...")
         self.encodings = self.text_encoder.process(self.smiles_list)
         self.fingerprints = generate_fingerprints(self.smiles_list)
-        # self.graphs, self.bi_graph_datas = generate_3d_graphs(
+        # self.graphs, self.graph_datas = generate_3d_graphs(
         #     self.smiles_list, smiles2graph=smiles2graph
         # )
 
-        if graph_model == 'bi_bi_graph_mpnn' or graph_model == 'original_bi_graph_no_mpnn' or graph_model== 'original_bi_graph_mpnn' or graph_model=='bi_bi_graph_no_mpnn':
-            self.graphs, self.bi_graph_datas = generate_3d_graphs(self.smiles_list)
-        elif graph_model == 'no_bi_graph_mpnn':
-            self.graphs = generate_3d_graphs_no_bi_graph(self.smiles_list)
+        self.graphs = generate_3d_graphs_no_bi_graph(self.smiles_list)
 
     def __len__(self):
         return len(self.fingerprints)
@@ -91,17 +88,15 @@ class CombinedMoleculeDataset(Dataset):
         item["fingerprints"] = self.fingerprints[idx]
         item["graphs"] = self.graphs[idx]
         item[measure_name] = self.targets[idx]
-        # self.bi_graph_datas[idx].idx = idx
-        # item["bi_graph_datas"] = self.bi_graph_datas[idx]
+        # self.graph_datas[idx].idx = idx
+        # item["graph_datas"] = self.graph_datas[idx]
 
-        if graph_model == 'bi_bi_graph_mpnn' or graph_model == 'original_bi_graph_no_mpnn' or graph_model== 'original_bi_graph_mpnn' or graph_model=='bi_bi_graph_no_mpnn':
-            self.bi_graph_datas[idx].idx = idx
-            item["bi_graph_datas"] = self.bi_graph_datas[idx]
+        item["graph_datas"] = self.graph_datas[idx]
         return item
 
 
 class MolecularEmbeddingModel(nn.Module):
-    def __init__(self, bert_model_name="bert-base-uncased", max_atoms=50, graph_model="bi_bi_graph_mpnn"):
+    def __init__(self, bert_model_name="bert-base-uncased", max_atoms=50, graph_model="bi_attn_graph_mpnn"):
         super(MolecularEmbeddingModel, self).__init__()
         # self.bert = BertModel.from_pretrained(bert_model_name)
         cur_config = parse_args()
@@ -114,10 +109,7 @@ class MolecularEmbeddingModel(nn.Module):
             self.bert.hidden_size, 128
         )  # Added to match combined embedding size
 
-        if graph_model == 'bi_bi_graph_mpnn' or graph_model== 'original_bi_graph_mpnn':
-            self.mid_liner_graph = nn.Linear(2 * 768, 1 * 768)
-        elif graph_model == 'no_bi_graph_mpnn' or graph_model == 'original_bi_graph_no_mpnn' or graph_model=='bi_bi_graph_no_mpnn':
-            self.mid_liner_graph = nn.Linear(1 * 768, 1 * 768)
+        self.mid_liner_graph = nn.Linear(1 * 768, 1 * 768)
         # self.mid_liner_graph = nn.Linear(2 * 768, 1 * 768)
         self.mid_liner = nn.Linear(3 * 768, 1 * 768)
 
@@ -132,7 +124,7 @@ class MolecularEmbeddingModel(nn.Module):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
 
-    def forward(self, input_ids, fingerprints, graphs, bi_graph_datas=None):
+    def forward(self, input_ids, fingerprints, graphs, graph_datas=None):
 
         logits = self.bert(input_ids)
         cls_output = logits[:, 0, :]
@@ -141,11 +133,11 @@ class MolecularEmbeddingModel(nn.Module):
         fp_embedding = self.fp_embedding(fingerprints)
 
         # Flatten and embed 3D Graph
-        if graph_model == 'bi_bi_graph_mpnn' or graph_model == 'original_bi_graph_no_mpnn' or graph_model== 'original_bi_graph_mpnn' or graph_model=='bi_bi_graph_no_mpnn':
-            graph_embedding = self.graph_embedding(graphs, bi_graph_datas)
-        elif graph_model == 'no_bi_graph_mpnn':
+        if graph_model == 'bi_attn_graph_mpnn' or graph_model == 'original_attn_graph_no_mpnn' or graph_model== 'original_attn_graph_mpnn' or graph_model=='bi_attn_graph_no_mpnn':
+            graph_embedding = self.graph_embedding(graphs, graph_datas)
+        elif graph_model == 'no_graph_only_mpnn':
             graph_embedding = self.graph_embedding(graphs)
-        # graph_embedding = self.graph_embedding(graphs, bi_graph_datas)
+        # graph_embedding = self.graph_embedding(graphs, graph_datas)
         graph_embedding = self.mid_liner_graph(graph_embedding)
 
         molecule_emb = torch.cat((cls_output, fp_embedding, graph_embedding), dim=1)
@@ -226,234 +218,8 @@ def criterion(out_1, out_2, batch_size, temperature=0.5):
 def append_to_file(filename, line):
     with open(filename, "a") as f:
         f.write(line + "\n")
-
-
-def train(
-    model,
-    dataloader,
-    valid_dataloader,
-    optimizer,
-    epochs=22,
-    measure_name="hiv",
-):
-    min_loss = {
-        measure_name + "min_valid_loss": torch.finfo(torch.float32).max,
-        measure_name + "min_epoch": 0,
-    }
-    dataset = "valid"
-    # results_dir = f"finetune_{dataset}_{measure_name}/weight442"
-    fc = nn.Linear(128, 2).to("cuda")
-    loss_fun = nn.CrossEntropyLoss()
-    # loss_fun = nn.BCELoss()
-
-    loss_file = open(f"{result_folder}/loss.txt", "a")
-
-    for epoch in range(epochs):
-        model.train()
-        total_loss = 0.0
-        for batch in tqdm(dataloader):
-            input_ids = batch["input_ids"]
-            # attention_mask = batch["attention_mask"]
-            fingerprints = batch["fingerprints"]
-            graphs = batch["graphs"]
-            bi_graph_datas = batch["bi_graph_datas"]
-
-            label = torch.tensor(batch[measure_name], dtype=torch.long).to("cuda")
-            if torch.cuda.is_available():
-                input_ids = input_ids.to("cuda")
-                fingerprints = fingerprints.to("cuda")
-                # attention_mask = attention_mask.to("cuda")
-                graphs = graphs.to("cuda")
-
-            optimizer.zero_grad()
-            measure = model(input_ids, fingerprints, graphs, bi_graph_datas)
-            loss = loss_fun(measure, label)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            optimizer.step()
-            total_loss += loss.item()
-
-        avg_loss = total_loss / len(dataloader)
-        print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss}")
-        loss_file.write(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss}" + "\n")
-        tensorboard_logs = {}
-        if epoch % 1 == 0:
-            total_loss = 0.0
-            total_roc_auc = 0.0
-            total_prec = 0.0
-            total_accuracy = 0.0
-            model.eval()
-            batch_id = 0
-            for batch in tqdm(valid_dataloader):
-                batch_id += 1
-                input_ids = batch["input_ids"]
-                # attention_mask = batch["attention_mask"]
-                fingerprints = batch["fingerprints"]
-                graphs = batch["graphs"]
-                bi_graph_datas = batch["bi_graph_datas"]
-                # if len(set(batch[measure_name])) != 1:
-                #     print("All labels are not the same: ", batch[measure_name])
-                #     print(len(valid_dataloader))
-                #     print(len(batch))
-
-                label = torch.tensor(batch[measure_name]).to("cuda")
-                if torch.cuda.is_available():
-                    input_ids = input_ids.to("cuda")
-                    fingerprints = fingerprints.to("cuda")
-                    # attention_mask = attention_mask.to("cuda")
-                    graphs = graphs.to("cuda")
-
-                measure = model(input_ids, fingerprints, graphs, bi_graph_datas)
-
-                loss = loss_fun(measure, label)
-                measure = F.softmax(measure, dim=1)
-
-                actuals_cpu = label.detach().cpu().numpy()
-                preds_cpu = measure.detach().cpu().numpy()
-
-                # classif
-                preds_0_cpu = preds_cpu[:, 0]
-                preds_cpu = preds_cpu[:, 1]
-
-                fpr, tpr, threshold = roc_curve(actuals_cpu, preds_cpu)
-                roc_auc = auc(fpr, tpr)
-                prec = average_precision_score(actuals_cpu, preds_cpu)
-
-                y_pred = np.where(preds_cpu >= 0.5, 1, 0)
-                accuracy = accuracy_score(actuals_cpu, y_pred)
-
-                tensorboard_logs.update(
-                    {
-                        # dataset + "_avg_val_loss": avg_loss,
-                        measure_name + "_" + dataset + "_loss": loss.item(),
-                        measure_name + "_" + dataset + "_acc": accuracy,
-                        measure_name + "_" + dataset + "_rocauc": roc_auc,
-                        measure_name + "_" + dataset + "_prec": prec,
-                    }
-                )
-
-
-                append_to_file(
-                    os.path.join(result_folder, "results" + "_batch.csv"),
-                    f"{measure_name}, epoch {epoch+1}, batch {batch_id} "
-                    + f"{loss},"
-                    # + f"{tensorboard_logs[measure_name + '_test_loss']},"
-                    + f"{accuracy},"
-                    + f"{roc_auc},"
-                    + f"{prec},"
-                )
-
-                total_loss += loss.item()
-                total_roc_auc += roc_auc
-                total_prec += prec
-                total_accuracy += accuracy
-                # print(f"Sub Validation Epoch {epoch+1}/{epochs}, Loss: {loss.item()}")
-            avg_loss = total_loss / len(valid_dataloader)
-            avg_roc_auc = total_roc_auc / len(valid_dataloader)
-            avg_prec = total_prec / len(valid_dataloader)
-            avg_accuracy = total_accuracy / len(valid_dataloader)
-
-            print(f"Validation Epoch {epoch+1}/{epochs}, Loss: {avg_loss}")
-            print(f"Validation Epoch {epoch+1}/{epochs}, rocauc: {avg_roc_auc}")
-            print(f"Validation Epoch {epoch+1}/{epochs}, prec: {avg_prec}")
-            print(f"Validation Epoch {epoch+1}/{epochs}, accuracy: {avg_accuracy}")
-
-            if (
-                tensorboard_logs[measure_name + "_valid_loss"]
-                < min_loss[measure_name + "min_valid_loss"]
-            ):
-                min_loss[measure_name + "min_valid_loss"] = tensorboard_logs[
-                    measure_name + "_valid_loss"
-                ]
-                min_loss[measure_name + "min_epoch"] = epoch + 1
-                min_loss[measure_name + "max_valid_rocauc"] = tensorboard_logs[
-                    measure_name + "_valid_rocauc"
-                ]
-                min_loss[measure_name + "max_valid_prec"] = tensorboard_logs[
-                    measure_name + "_valid_prec"
-                ]
-
-            tensorboard_logs[measure_name + "_min_valid_loss"] = min_loss[
-                measure_name + "min_valid_loss"
-            ]
-
-            tensorboard_logs[measure_name + "_max_valid_rocauc"] = min_loss[
-                measure_name + "max_valid_rocauc"
-            ]
-            tensorboard_logs[measure_name + "_max_valid_prec"] = min_loss[
-                measure_name + "max_valid_prec"
-            ]
-
-
-            append_to_file(
-                os.path.join(result_folder, "results" + ".csv"),
-                f"{measure_name}, {epoch+1},"
-                + f"{tensorboard_logs[measure_name + '_valid_loss']},"
-                + f"{min_loss[measure_name + 'min_epoch']},"
-                + f"{min_loss[measure_name + 'min_valid_loss']},"
-                + f"{min_loss[measure_name + 'max_valid_rocauc']},"
-                + f"{min_loss[measure_name + 'max_valid_prec']},"
-                + f"######## "
-                + f"{avg_loss}, "
-                + f"{avg_roc_auc}, "
-                + f"{avg_prec}, "
-                + f"{avg_accuracy}, "
-            )
-
-            torch.save(
-                model.state_dict(),
-                f"{result_folder}/checkpoint.ckpt",
-            )
-
-def test_with_bi_graph(
-    model,
-    valid_dataloader,
-    measure_name="hiv",
-):
-
-    with open(result_folder + "results" + "_test.csv", 'a') as file:
-        headers = "preb_0,preb_1,label,y_pred"
-        file.write(headers + "\n")
-
-    model.eval()
-    batch_id = 0
-    for batch in tqdm(valid_dataloader):
-        batch_id += 1
-        input_ids = batch["input_ids"]
-        fingerprints = batch["fingerprints"]
-        graphs = batch["graphs"]
-        bi_graph_datas = batch["bi_graph_datas"]
-
-        label = torch.tensor(batch[measure_name]).to("cuda")
-        if torch.cuda.is_available():
-            input_ids = input_ids.to("cuda")
-            fingerprints = fingerprints.to("cuda")
-            # attention_mask = attention_mask.to("cuda")
-            graphs = graphs.to("cuda")
-
-        measure = model(input_ids, fingerprints, graphs, bi_graph_datas)
-
-        measure = F.softmax(measure, dim=1)
-
-        actuals_cpu = label.detach().cpu().numpy()
-        preds_cpu = measure.detach().cpu().numpy()
-
-        # classif
-        preds_0_cpu = preds_cpu[:, 0]
-        preds_cpu = preds_cpu[:, 1]
-        y_pred = np.where(preds_cpu >= 0.5, 1, 0)
-
-        for i in range(len(y_pred)):
-            append_to_file(
-                os.path.join(result_folder, "results" + "_test.csv"),
-                f"{preds_0_cpu[i]},"
-                + f"{preds_cpu[i]},"
-                + f"{label[i]},"
-                + f"{y_pred[i]}"
-            )
-
         
-def train_no_bi_graph(
+def train(
     model,
     dataloader,
     valid_dataloader,
@@ -481,7 +247,7 @@ def train_no_bi_graph(
             # attention_mask = batch["attention_mask"]
             fingerprints = batch["fingerprints"]
             graphs = batch["graphs"]
-            # bi_graph_datas = batch["bi_graph_datas"]
+            # graph_datas = batch["graph_datas"]
 
             label = torch.tensor(batch[measure_name], dtype=torch.long).to("cuda")
             if torch.cuda.is_available():
@@ -515,7 +281,7 @@ def train_no_bi_graph(
                 # attention_mask = batch["attention_mask"]
                 fingerprints = batch["fingerprints"]
                 graphs = batch["graphs"]
-                # bi_graph_datas = batch["bi_graph_datas"]
+                # graph_datas = batch["graph_datas"]
                 label = torch.tensor(batch[measure_name]).to("cuda")
                 if torch.cuda.is_available():
                     input_ids = input_ids.to("cuda")
@@ -638,7 +404,7 @@ def train_no_bi_graph(
             )
 
 
-def test_no_bi_graph(
+def test(
     model,
     valid_dataloader,
     measure_name="hiv",
@@ -695,9 +461,9 @@ def custom_collate_fn(batch):
             collated_batch[key] = molecule_batch
         elif key in [measure_name]:
             collated_batch[key] = [int(item[key]) for item in batch]
-        elif key in ["bi_graph_datas"]:
-            bi_graph_datas = collator([elem[key] for elem in batch])
-            collated_batch[key] = bi_graph_datas
+        elif key in ["graph_datas"]:
+            graph_datas = collator([elem[key] for elem in batch])
+            collated_batch[key] = graph_datas
         else:
             padded_data = torch.stack([elem[key] for elem in batch])
             padded_data = padded_data.squeeze(1)
@@ -714,8 +480,7 @@ if main_args.test:
 
     for dataset_name in ["MIC","bace","bbbp"]:
         print(f"Dataset name: {dataset_name}")
-        # for graph_model in ["bi_bi_graph_mpnn","bi_bi_graph_no_mpnn","no_bi_graph_mpnn","original_bi_graph_mpnn","original_bi_graph_no_mpnn"]:
-        for graph_model in ["bi_bi_graph_mpnn","original_bi_graph_mpnn","no_bi_graph_mpnn"]:
+        for graph_model in ["original_graph_mpnn","no_graph_mpnn"]:
             data_path = config['data'][dataset_name]['data_root']
             measure_name = config['data'][dataset_name]['measure_name']
             num_classes = config['data'][dataset_name]['num_classes']
@@ -752,10 +517,7 @@ if main_args.test:
             if torch.cuda.is_available():
                 model = model.cuda()
                     
-            if graph_model == 'bi_bi_graph_mpnn' or graph_model == 'original_bi_graph_no_mpnn' or graph_model== 'original_bi_graph_mpnn' or graph_model=='bi_bi_graph_no_mpnn':
-                test_with_bi_graph(model=model, valid_dataloader=test_dataloader,measure_name=measure_name)
-            elif graph_model == 'no_bi_graph_mpnn':
-                test_no_bi_graph(model=model, valid_dataloader=test_dataloader,measure_name=measure_name)
+            test(model=model, valid_dataloader=test_dataloader,measure_name=measure_name)
     
 
 
@@ -764,8 +526,8 @@ elif main_args.dataset_name == 'ALL':
     # for dataset_name in ["Bioavailability","HIA","PAMPA","clintox"]:
     for dataset_name in ["bace","bbbp"]:
         print(f"Dataset name: {dataset_name}")
-        for graph_model in ["bi_bi_graph_mpnn","bi_bi_graph_no_mpnn","no_bi_graph_mpnn","original_bi_graph_mpnn","original_bi_graph_no_mpnn"]:
-        # for graph_model in ["bi_bi_graph_no_mpnn","original_bi_graph_no_mpnn"]:
+        for graph_model in ["no_graph_only_mpnn","original_attn_graph_mpnn","original_attn_graph_no_mpnn"]:
+        # for graph_model in ["bi_attn_graph_no_mpnn","original_attn_graph_no_mpnn"]:
             print(f"Model name: {graph_model}")
 
             data_path = config['data'][dataset_name]['data_root']
@@ -840,84 +602,4 @@ elif main_args.dataset_name == 'ALL':
                 model = model.cuda()
             optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-3)
 
-            if graph_model == 'bi_bi_graph_mpnn' or graph_model == 'original_bi_graph_no_mpnn' or graph_model== 'original_bi_graph_mpnn' or graph_model=='bi_bi_graph_no_mpnn':
-                train(model, train_dataloader, valid_dataloader, optimizer, epochs=20, measure_name=measure_name)
-            elif graph_model == 'no_bi_graph_mpnn':
-                train_no_bi_graph(model, train_dataloader, valid_dataloader, optimizer, epochs=20, measure_name=measure_name)
-
-else:
-    data_path = config['data'][dataset_name]['data_root']
-    measure_name = config['data'][dataset_name]['measure_name']
-    num_classes = config['data'][dataset_name]['num_classes']
-    result_folder = f"{config['result']['finetune_path']}/{data_path}/{main_args.graph_model}/"
-    ensure_folder_exists(result_folder)
-
-    train_data = pd.read_csv(
-        f"{data_path}/train.csv",
-        sep=",",
-        header=0
-    )
-    test_data = pd.read_csv(
-        f"{data_path}/test.csv",
-        sep=",",
-        header=0
-    )
-    valid_data = pd.read_csv(
-        f"{data_path}/valid.csv",
-        sep=",",
-        header=0
-    )
-
-    # Create dataset and dataloader
-    train_dataset = CombinedMoleculeDataset(data=train_data,graph_model=main_args.graph_model)
-    test_dataset = CombinedMoleculeDataset(data=test_data,graph_model=main_args.graph_model)
-    valid_dataset = CombinedMoleculeDataset(data=valid_data,graph_model=main_args.graph_model)
-
-    train_labels=train_dataset.targets
-    train_class_sample_count=np.bincount(train_labels)
-    train_weights=1.0/train_class_sample_count
-    train_sample_weights=train_weights[train_labels]
-    train_sampler=WeightedRandomSampler(weights=train_sample_weights, num_samples=len(train_sample_weights), replacement=True)
-
-    valid_labels=valid_dataset.targets
-    valid_class_sample_count=np.bincount(valid_labels)
-    valid_weights=1.0/valid_class_sample_count
-    valid_sample_weights=valid_weights[valid_labels]
-    valid_sampler=WeightedRandomSampler(weights=valid_sample_weights, num_samples=len(valid_sample_weights), replacement=True)
-
-    # dataset = CombinedMoleculeDataset()
-    train_dataloader = DataLoader(
-        train_dataset, batch_size=config["finetune"]["batch_size"], shuffle=False, collate_fn=custom_collate_fn,drop_last=True, sampler=train_sampler
-    )
-    test_dataloader = DataLoader(
-        test_dataset, batch_size=config["finetune"]["batch_size"], shuffle=False, collate_fn=custom_collate_fn,drop_last=True
-    )
-    valid_dataloader = DataLoader(
-        valid_dataset, batch_size=config["finetune"]["batch_size"], shuffle=False, collate_fn=custom_collate_fn,drop_last=True, sampler=valid_sampler
-    )
-
-    # Instantiate and train the model
-    def weights_init(m):
-        if isinstance(m, nn.Linear):
-            nn.init.kaiming_normal_(m.weight)
-            if m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-
-
-    model = MolecularEmbeddingModel(graph_model=main_args.graph_model)
-
-    # print(model.state_dict().keys())
-    # print(torch.load(f"checkpoint_12.ckpt").keys)
-    model.load_state_dict(
-        torch.load(main_args.model_path), strict=False
-    )
-    # model.apply(weights_init)
-
-    if torch.cuda.is_available():
-        model = model.cuda()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-3)
-
-    if main_args.graph_model == 'bi_bi_graph_mpnn' or main_args.graph_model == 'original_bi_graph_no_mpnn' or main_args.graph_model== 'original_bi_graph_mpnn' or main_args.graph_model=='bi_bi_graph_no_mpnn':
-        train(model, train_dataloader, valid_dataloader, optimizer, epochs=100)
-    elif main_args.graph_model == 'no_bi_graph_mpnn':
-        train_no_bi_graph(model, train_dataloader, valid_dataloader, optimizer, epochs=100)
+            train(model, train_dataloader, valid_dataloader, optimizer, epochs=20, measure_name=measure_name)

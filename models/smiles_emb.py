@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 import random
-from models.pubchem_encoder import Encoder
+from models.encoder import Encoder
 import pytorch_lightning as pl
 from fast_transformers.masking import LengthMask as LM
 from .rotate_attention.rotate_builder import RotateEncoderBuilder as rotate_builder

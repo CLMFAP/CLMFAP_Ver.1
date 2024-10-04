@@ -12,7 +12,7 @@ from utils.utils import *
 from utils.data_utils import *
 from bi_graph_data.wrapper import preprocess_item
 import regex as re
-from models.pubchem_encoder import Encoder
+from models.encoder import Encoder
 
 
 def normalize_smiles(smi, canonical, isomeric):
@@ -56,7 +56,7 @@ def generate_3d_graphs(
 ):
     smiles2graph = smiles2graph
     graphs = []
-    bi_graph_datas = []
+    graph_datas = []
     for smi in tqdm(smiles_list):
         graph = smiles2graph(smi)
         # print("$$$$$$$$$$$$$$$")
@@ -70,10 +70,10 @@ def generate_3d_graphs(
         # print(data.x.shape)
         graphs.append(data)
         bi_graph_data = preprocess_item(data)
-        bi_graph_datas.append(bi_graph_data)
+        graph_datas.append(bi_graph_data)
         # print(data.x.shape)
         # print("$$$$$$$$$$$$$$$$")
-    return graphs, bi_graph_datas
+    return graphs, graph_datas
 
 # Generate 3D Graphs with Padding
 def generate_3d_graphs_no_bi_graph(

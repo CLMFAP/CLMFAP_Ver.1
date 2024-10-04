@@ -29,7 +29,7 @@ import regex as re
 # Define the Model
 # from args import args
 import argparse
-from models.pubchem_encoder import Encoder
+from models.encoder import Encoder
 
 
 warnings.filterwarnings("ignore")
@@ -75,7 +75,7 @@ class CombinedMoleculeDataset(Dataset):
         print("Loading data...")
         self.encodings = self.text_encoder.process(self.smiles_list)
         self.fingerprints = generate_fingerprints(self.smiles_list)
-        self.graphs, self.bi_graph_datas = generate_3d_graphs(self.smiles_list)
+        self.graphs, self.graph_datas = generate_3d_graphs(self.smiles_list)
 
     def __len__(self):
         return len(self.encodings[0])
@@ -86,8 +86,8 @@ class CombinedMoleculeDataset(Dataset):
 
         item["fingerprints"] = self.fingerprints[idx]
         item["graphs"] = self.graphs[idx]
-        self.bi_graph_datas[idx].idx = idx
-        item["bi_graph_datas"] = self.bi_graph_datas[idx]
+        self.graph_datas[idx].idx = idx
+        item["graph_datas"] = self.graph_datas[idx]
         return item
 
 class MolecularEmbeddingModel(nn.Module):
@@ -105,7 +105,7 @@ class MolecularEmbeddingModel(nn.Module):
         self.mid_liner_graph = nn.Linear(2 * 768, 1 * 768)
 
 
-    def forward(self, input_ids, fingerprints, graphs, bi_graph_datas):
+    def forward(self, input_ids, fingerprints, graphs, graph_datas):
 
         # Smiles embedding
         logits = self.bert(input_ids)
@@ -115,7 +115,7 @@ class MolecularEmbeddingModel(nn.Module):
         fp_embedding = self.fp_embedding(fingerprints)
 
         # 3D Graph embedding
-        graph_embedding = self.graph_embedding(graphs, bi_graph_datas)
+        graph_embedding = self.graph_embedding(graphs, graph_datas)
         graph_embedding = self.mid_liner_graph(graph_embedding)
 
         return cls_output, fp_embedding, graph_embedding
@@ -189,7 +189,7 @@ def train(model, dataloader, valid_dataloader, optimizer, epochs=10):
             # attention_mask = batch["attention_mask"]
             fingerprints = batch["fingerprints"]
             graphs = batch["graphs"]
-            bi_graph_datas = batch["bi_graph_datas"]
+            graph_datas = batch["graph_datas"]
             # if torch.cuda.is_available():
             input_ids = input_ids.to(device)
             fingerprints = fingerprints.to(device)
@@ -199,7 +199,7 @@ def train(model, dataloader, valid_dataloader, optimizer, epochs=10):
             optimizer.zero_grad()
 
             cls_output, fp_embedding, graph_embedding = model(
-                input_ids, fingerprints, graphs, bi_graph_datas
+                input_ids, fingerprints, graphs, graph_datas
             )
 
             loss = contrastive_loss(cls_output, fp_embedding, graph_embedding)
@@ -218,7 +218,7 @@ def train(model, dataloader, valid_dataloader, optimizer, epochs=10):
                 input_ids = batch["input_ids"]
                 fingerprints = batch["fingerprints"]
                 graphs = batch["graphs"]
-                bi_graph_datas = batch["bi_graph_datas"]
+                graph_datas = batch["graph_datas"]
                 # if torch.cuda.is_available():
                 input_ids = input_ids.to(device)
                 fingerprints = fingerprints.to(device)
@@ -227,7 +227,7 @@ def train(model, dataloader, valid_dataloader, optimizer, epochs=10):
                 optimizer.zero_grad()
 
                 cls_output, fp_embedding, graph_embedding = model(
-                    input_ids, fingerprints, graphs, bi_graph_datas
+                    input_ids, fingerprints, graphs, graph_datas
                 )
 
                 loss = contrastive_loss(cls_output, fp_embedding, graph_embedding)
@@ -252,9 +252,9 @@ def custom_collate_fn(batch):
         if key in ["graphs"]:
             molecule_batch = Batch.from_data_list([elem[key] for elem in batch])
             collated_batch[key] = molecule_batch
-        elif key in ["bi_graph_datas"]:
-            bi_graph_datas = collator([elem[key] for elem in batch])
-            collated_batch[key] = bi_graph_datas
+        elif key in ["graph_datas"]:
+            graph_datas = collator([elem[key] for elem in batch])
+            collated_batch[key] = graph_datas
         else:
             padded_data = torch.stack([elem[key] for elem in batch])
             padded_data = padded_data.squeeze(1)
