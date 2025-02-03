@@ -1,0 +1,210 @@
+{
+    "model": "My_Model",
+    "data": {
+        "pretrain_path": "data/CID-SMILES-CANONICAL.smi",
+        "finetune_path": "data/sidar",
+        "bace": {
+            "data_root": "data/bace",
+            "measure_name": "Class",
+            "num_classes": 2
+        },
+        "bace_0": {
+            "data_root": "data/bace_0",
+            "measure_name": "Class",
+            "num_classes": 2
+        },
+        "bace_1": {
+            "data_root": "data/bace_1",
+            "measure_name": "Class",
+            "num_classes": 2
+        },
+        "bace_2": {
+            "data_root": "data/bace_2",
+            "measure_name": "Class",
+            "num_classes": 2
+        },
+        "hiv": {
+            "data_root": "data/hiv",
+            "measure_name": "HIV_active",
+            "num_classes": 2
+        },
+        "bbbp": {
+            "data_root": "data/bbbp",
+            "measure_name": "p_np",
+            "num_classes": 2
+        },
+        "Bioavailability": {
+            "data_root": "data/Bioavailability",
+            "measure_name": "Y",
+            "num_classes": 2
+        },
+        "HIA": {
+            "data_root": "data/HIA",
+            "measure_name": "Y",
+            "num_classes": 2
+        },
+        "PAMPA": {
+            "data_root": "data/PAMPA",
+            "measure_name": "Y",
+            "num_classes": 2
+        },
+        "clintox": {
+            "data_root": "data/clintox",
+            "measure_name": "FDA_APPROVED",
+            "num_classes": 2
+        },
+        "PPBR": {
+            "data_root": "data/PPBR",
+            "measure_name": "Y",
+            "num_classes": 0
+        },
+        "Caco2": {
+            "data_root": "data/Caco2",
+            "measure_name": "Y",
+            "num_classes": 0
+        },        
+        "esol": {
+            "data_root": "data/esol",
+            "measure_name": "measured log solubility in mols per litre",
+            "num_classes": 0
+        },        
+        "MIC": {
+            "data_root": "data/MIC",
+            "measure_name": "BINARY_ACTIVITY",
+            "num_classes": 2
+        },
+        "MIC_1": {
+            "data_root": "data/rebuttal/MIC_1",
+            "measure_name": "BINARY_ACTIVITY",
+            "num_classes": 2
+        },
+        "MIC_2": {
+            "data_root": "data/rebuttal/MIC_2",
+            "measure_name": "BINARY_ACTIVITY",
+            "num_classes": 2
+        },
+        "bbbp_1": {
+            "data_root": "data/rebuttal/bbbp_1",
+            "measure_name": "p_np",
+            "num_classes": 2
+        },
+        "bbbp_2": {
+            "data_root": "data/rebuttal/bbbp_2",
+            "measure_name": "p_np",
+            "num_classes": 2
+        },
+        "PAMPA_1": {
+            "data_root": "data/rebuttal/PAMPA_1",
+            "measure_name": "Y",
+            "num_classes": 2
+        },
+        "PAMPA_2": {
+            "data_root": "data/rebuttal/PAMPA_2",
+            "measure_name": "Y",
+            "num_classes": 2
+        },
+        "Bioavailability_1": {
+            "data_root": "data/rebuttal/Bioavailability_1",
+            "measure_name": "Y",
+            "num_classes": 2
+        },
+        "Bioavailability_2": {
+            "data_root": "data/rebuttal/Bioavailability_2",
+            "measure_name": "Y",
+            "num_classes": 2
+        },
+        "antibiotic_0": {
+            "data_root": "data/rebuttal/antibiotic_0",
+            "measure_name": "Binary_Activity_4",
+            "num_classes": 2
+        },
+        "antibiotic_1": {
+            "data_root": "data/rebuttal/antibiotic_1",
+            "measure_name": "Binary_Activity_4",
+            "num_classes": 2
+        },
+        "antibiotic_2": {
+            "data_root": "data/rebuttal/antibiotic_2",
+            "measure_name": "Binary_Activity_4",
+            "num_classes": 2
+        },
+        "Ecoli_BW25113_Activity_0":{
+            "data_root": "data/Ecoli_BW25113_Activity_0",
+            "measure_name": "Binary_Activity",
+            "num_classes": 2
+        },
+        "Ecoli_Activity_0":{
+            "data_root": "data/Ecoli_Activity_0",
+            "measure_name": "Binary_Activity",
+            "num_classes": 2
+        },
+        "Ecoli_BW25113_Activity_1":{
+            "data_root": "data/Ecoli_BW25113_Activity_1",
+            "measure_name": "Binary_Activity",
+            "num_classes": 2
+        },
+        "Ecoli_Activity_1":{
+            "data_root": "data/Ecoli_Activity_1",
+            "measure_name": "Binary_Activity",
+            "num_classes": 2
+        },
+        "Ecoli_BW25113_Activity_2":{
+            "data_root": "data/Ecoli_BW25113_Activity_2",
+            "measure_name": "Binary_Activity",
+            "num_classes": 2
+        },
+        "Ecoli_Activity_2":{
+            "data_root": "data/Ecoli_Activity_2",
+            "measure_name": "Binary_Activity",
+            "num_classes": 2
+        }
+    },
+    "result": {
+        "pretrain_path": "result/pretrain_result",
+        "finetune_path": "result/finetune_result",
+        "test_path": "result/test_result"
+    },
+    "pretrain": {
+        "batch_size": 16,
+        "num_workers": 4,
+        "epochs": 25,
+        "lr_start": 1e-4,
+        "d_dropout": 0
+    },
+    "finetune": {
+        "batch_size":48
+    },
+    "mpnn": {
+        "graph": {
+            "name": "MoMu",
+            "gin_hidden_dim": 768,
+            "gin_num_layers": 5,
+            "drop_ratio": 0.0,
+            "graph_pooling": "sum",
+            "graph_self": false,
+            "max_n_nodes": -1,
+            "bert_dropout": 0.0,
+            "bert_hidden_dim": 1024,
+            "output_dim": 302,
+            "projection_dim": 256,
+            "init_checkpoint": "../../ckpts/fusion_ckpts/momu/MoMuS.ckpt",
+            "param_key": "state_dict",
+            "stop_grad": false
+        },
+        "projection_dim": 256
+    },
+    "pretrained_model": {
+        "bi_graphormer_mpnn":{"path":"result/pretrain_result_bi_graphormer_mpnn_save/checkpoint_20.ckpt"},
+        "bi_graphormer_no_mpnn":{"path":"result/pretrain_result_bi_graphormer_no_mpnn_save/checkpoint_20.ckpt"},
+        "no_graphormer_mpnn":{"path":"result/pretrain_result_no_graphormer_mpnn_save/checkpoint_20.ckpt"},
+        "original_graphormer_mpnn":{"path":"result/pretrain_result_original_graphormer_mpnn_save/checkpoint_20.ckpt"},
+        "original_graphormer_no_mpnn":{"path":"result/pretrain_result_original_graphormer_no_mpnn_save/checkpoint_20.ckpt"}
+    },
+    "finetuned_esol_model": {
+        "bi_graphormer_mpnn":{"path":"/home/user/workspace/MY_MODEL/result/finetune_result/data/esol/bi_graphormer_mpnn/checkpoint.ckpt"},
+        "bi_graphormer_no_mpnn":{"path":"/home/user/workspace/MY_MODEL/result/finetune_result/data/esol/bi_graphormer_no_mpnn/checkpoint.ckpt"},
+        "no_graphormer_mpnn":{"path":"/home/user/workspace/MY_MODEL/result/finetune_result/data/esol/no_graphormer_mpnn/checkpoint.ckpt"},
+        "original_graphormer_mpnn":{"path":"/home/user/workspace/MY_MODEL/result/finetune_result/data/esol/original_graphormer_mpnn/checkpoint.ckpt"},
+        "original_graphormer_no_mpnn":{"path":"/home/user/workspace/MY_MODEL/result/finetune_result/data/esol/original_graphormer_no_mpnn/checkpoint.ckpt"}
+    }
+}

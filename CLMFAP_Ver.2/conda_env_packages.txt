@@ -1,0 +1,173 @@
+# packages in environment at anaconda3/envs/my_model_env:
+#
+# Name                    Version                   Build  Channel
+_libgcc_mutex             0.1                        main  
+_openmp_mutex             5.1                       1_gnu  
+absl-py                   2.1.0                    pypi_0    pypi
+aiohappyeyeballs          2.3.5                    pypi_0    pypi
+aiohttp                   3.10.3                   pypi_0    pypi
+aiosignal                 1.3.1                    pypi_0    pypi
+antlr4-python3-runtime    4.8                      pypi_0    pypi
+apex                      0.1                      pypi_0    pypi
+async-timeout             4.0.3                    pypi_0    pypi
+attrs                     24.2.0                   pypi_0    pypi
+bitarray                  2.9.2                    pypi_0    pypi
+bleach                    6.2.0                    pypi_0    pypi
+bokeh                     3.4.3                    pypi_0    pypi
+bytecode                  0.16.0                   pypi_0    pypi
+ca-certificates           2024.7.2             h06a4308_0  
+certifi                   2024.7.4                 pypi_0    pypi
+cffi                      1.17.0                   pypi_0    pypi
+charset-normalizer        3.3.2                    pypi_0    pypi
+click                     8.1.7                    pypi_0    pypi
+cloudpickle               3.1.0                    pypi_0    pypi
+cmake                     3.30.2                   pypi_0    pypi
+colorama                  0.4.6                    pypi_0    pypi
+colorcet                  3.1.0                    pypi_0    pypi
+contourpy                 1.3.0                    pypi_0    pypi
+cycler                    0.12.1                   pypi_0    pypi
+cython                    3.0.11                   pypi_0    pypi
+dask                      2024.8.0                 pypi_0    pypi
+datashader                0.16.3                   pypi_0    pypi
+einops                    0.8.0                    pypi_0    pypi
+fairseq                   0.12.2                   pypi_0    pypi
+filelock                  3.15.4                   pypi_0    pypi
+fonttools                 4.53.1                   pypi_0    pypi
+frozenlist                1.4.1                    pypi_0    pypi
+fsspec                    2024.6.1                 pypi_0    pypi
+future                    1.0.0                    pypi_0    pypi
+grpcio                    1.65.4                   pypi_0    pypi
+holoviews                 1.20.0                   pypi_0    pypi
+huggingface-hub           0.24.7                   pypi_0    pypi
+hydra-core                1.0.7                    pypi_0    pypi
+idna                      3.7                      pypi_0    pypi
+imageio                   2.36.0                   pypi_0    pypi
+importlib-metadata        8.2.0                    pypi_0    pypi
+importlib-resources       6.4.5                    pypi_0    pypi
+jinja2                    3.1.4                    pypi_0    pypi
+joblib                    1.4.2                    pypi_0    pypi
+kiwisolver                1.4.7                    pypi_0    pypi
+lazy-loader               0.4                      pypi_0    pypi
+ld_impl_linux-64          2.38                 h1181459_1  
+libffi                    3.4.4                h6a678d5_1  
+libgcc-ng                 11.2.0               h1234567_1  
+libgomp                   11.2.0               h1234567_1  
+libstdcxx-ng              11.2.0               h1234567_1  
+linkify-it-py             2.0.3                    pypi_0    pypi
+lit                       18.1.8                   pypi_0    pypi
+littleutils               0.2.4                    pypi_0    pypi
+llvmlite                  0.43.0                   pypi_0    pypi
+locket                    1.0.0                    pypi_0    pypi
+lxml                      5.3.0                    pypi_0    pypi
+markdown                  3.6                      pypi_0    pypi
+markdown-it-py            3.0.0                    pypi_0    pypi
+markupsafe                2.1.5                    pypi_0    pypi
+matplotlib                3.8.0                    pypi_0    pypi
+mdit-py-plugins           0.4.2                    pypi_0    pypi
+mdurl                     0.1.2                    pypi_0    pypi
+mpmath                    1.3.0                    pypi_0    pypi
+multidict                 6.0.5                    pypi_0    pypi
+multipledispatch          1.0.0                    pypi_0    pypi
+ncurses                   6.4                  h6a678d5_0  
+networkx                  3.2.1                    pypi_0    pypi
+numba                     0.60.0                   pypi_0    pypi
+numpy                     1.26.3                   pypi_0    pypi
+nvidia-cublas-cu11        11.11.3.6                pypi_0    pypi
+nvidia-cublas-cu12        12.1.3.1                 pypi_0    pypi
+nvidia-cuda-cupti-cu11    11.8.87                  pypi_0    pypi
+nvidia-cuda-cupti-cu12    12.1.105                 pypi_0    pypi
+nvidia-cuda-nvrtc-cu11    11.8.89                  pypi_0    pypi
+nvidia-cuda-nvrtc-cu12    12.1.105                 pypi_0    pypi
+nvidia-cuda-runtime-cu11  11.8.89                  pypi_0    pypi
+nvidia-cuda-runtime-cu12  12.1.105                 pypi_0    pypi
+nvidia-cudnn-cu11         8.7.0.84                 pypi_0    pypi
+nvidia-cudnn-cu12         8.9.2.26                 pypi_0    pypi
+nvidia-cufft-cu11         10.9.0.58                pypi_0    pypi
+nvidia-cufft-cu12         11.0.2.54                pypi_0    pypi
+nvidia-curand-cu11        10.3.0.86                pypi_0    pypi
+nvidia-curand-cu12        10.3.2.106               pypi_0    pypi
+nvidia-cusolver-cu11      11.4.1.48                pypi_0    pypi
+nvidia-cusolver-cu12      11.4.5.107               pypi_0    pypi
+nvidia-cusparse-cu11      11.7.5.86                pypi_0    pypi
+nvidia-cusparse-cu12      12.1.0.106               pypi_0    pypi
+nvidia-nccl-cu11          2.20.5                   pypi_0    pypi
+nvidia-nccl-cu12          2.18.1                   pypi_0    pypi
+nvidia-nvjitlink-cu12     12.6.20                  pypi_0    pypi
+nvidia-nvtx-cu11          11.8.86                  pypi_0    pypi
+nvidia-nvtx-cu12          12.1.105                 pypi_0    pypi
+ogb                       1.3.6                    pypi_0    pypi
+omegaconf                 2.0.6                    pypi_0    pypi
+openssl                   3.0.14               h5eee18b_0  
+outdated                  0.2.2                    pypi_0    pypi
+packaging                 24.1                     pypi_0    pypi
+pandas                    2.2.3                    pypi_0    pypi
+panel                     1.4.5                    pypi_0    pypi
+param                     2.1.1                    pypi_0    pypi
+partd                     1.4.2                    pypi_0    pypi
+pillow                    10.2.0                   pypi_0    pypi
+pip                       24.0             py39h06a4308_0  
+portalocker               2.10.1                   pypi_0    pypi
+protobuf                  4.25.4                   pypi_0    pypi
+psutil                    6.0.0                    pypi_0    pypi
+ptflops                   0.7.3                    pypi_0    pypi
+pycparser                 2.22                     pypi_0    pypi
+pyct                      0.5.0                    pypi_0    pypi
+pynndescent               0.5.13                   pypi_0    pypi
+pyparsing                 3.1.2                    pypi_0    pypi
+python                    3.9.19               h955ad1f_1  
+python-dateutil           2.9.0.post0              pypi_0    pypi
+pytorch-fast-transformers 0.4.0                    pypi_0    pypi
+pytorch-lightning         1.1.5                    pypi_0    pypi
+pytz                      2024.1                   pypi_0    pypi
+pyviz-comms               3.0.3                    pypi_0    pypi
+pyyaml                    6.0.2                    pypi_0    pypi
+rdkit                     2022.3.3                 pypi_0    pypi
+readline                  8.2                  h5eee18b_0  
+regex                     2024.7.24                pypi_0    pypi
+requests                  2.32.3                   pypi_0    pypi
+sacrebleu                 2.4.2                    pypi_0    pypi
+sacremoses                0.1.1                    pypi_0    pypi
+safetensors               0.4.4                    pypi_0    pypi
+scikit-image              0.24.0                   pypi_0    pypi
+scikit-learn              1.5.1                    pypi_0    pypi
+scipy                     1.13.1                   pypi_0    pypi
+seaborn                   0.13.2                   pypi_0    pypi
+setuptools                72.1.0                   pypi_0    pypi
+six                       1.16.0                   pypi_0    pypi
+sqlite                    3.45.3               h5eee18b_0  
+sympy                     1.13.1                   pypi_0    pypi
+tabulate                  0.9.0                    pypi_0    pypi
+tbb                       2022.0.0                 pypi_0    pypi
+tcmlib                    1.2.0                    pypi_0    pypi
+tensorboard               2.17.0                   pypi_0    pypi
+tensorboard-data-server   0.7.2                    pypi_0    pypi
+threadpoolctl             3.5.0                    pypi_0    pypi
+tifffile                  2024.8.30                pypi_0    pypi
+tk                        8.6.14               h39e8969_0  
+tokenizers                0.19.1                   pypi_0    pypi
+toolz                     1.0.0                    pypi_0    pypi
+torch                     2.3.0+cu118              pypi_0    pypi
+torch-geometric           2.3.1                    pypi_0    pypi
+torch-scatter             2.1.1                    pypi_0    pypi
+torchaudio                2.3.0+cu118              pypi_0    pypi
+torchsummary              1.5.1                    pypi_0    pypi
+torchvision               0.18.0+cu118             pypi_0    pypi
+tornado                   6.4.1                    pypi_0    pypi
+tqdm                      4.66.5                   pypi_0    pypi
+transformers              4.44.2                   pypi_0    pypi
+triton                    2.3.0                    pypi_0    pypi
+typing-extensions         4.12.2                   pypi_0    pypi
+tzdata                    2024.2                   pypi_0    pypi
+uc-micro-py               1.0.3                    pypi_0    pypi
+umap-learn                0.5.1                    pypi_0    pypi
+urllib3                   2.2.2                    pypi_0    pypi
+visualizer                0.0.1                    pypi_0    pypi
+webencodings              0.5.1                    pypi_0    pypi
+werkzeug                  3.0.3                    pypi_0    pypi
+wheel                     0.43.0           py39h06a4308_0  
+xarray                    2024.7.0                 pypi_0    pypi
+xyzservices               2024.9.0                 pypi_0    pypi
+xz                        5.4.6                h5eee18b_1  
+yarl                      1.9.4                    pypi_0    pypi
+zipp                      3.19.2                   pypi_0    pypi
+zlib                      1.2.13               h5eee18b_1  

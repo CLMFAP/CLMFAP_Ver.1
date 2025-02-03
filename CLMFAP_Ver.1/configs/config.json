@@ -1,0 +1,100 @@
+{
+    "model": "My_Model",
+    "data": {
+        "pretrain_path": "data/CID-SMILES-CANONICAL.smi",
+        "finetune_path": "data/sidar",
+        "bace": {
+            "data_root": "data/bace",
+            "measure_name": "Class",
+            "num_classes": 2
+        },
+        "hiv": {
+            "data_root": "data/hiv",
+            "measure_name": "HIV_active",
+            "num_classes": 2
+        },
+        "bbbp": {
+            "data_root": "data/bbbp",
+            "measure_name": "p_np",
+            "num_classes": 2
+        },
+        "Bioavailability": {
+            "data_root": "data/Bioavailability",
+            "measure_name": "Y",
+            "num_classes": 2
+        },
+        "HIA": {
+            "data_root": "data/HIA",
+            "measure_name": "Y",
+            "num_classes": 2
+        },
+        "PAMPA": {
+            "data_root": "data/PAMPA",
+            "measure_name": "Y",
+            "num_classes": 2
+        },
+        "clintox": {
+            "data_root": "data/clintox",
+            "measure_name": "FDA_APPROVED",
+            "num_classes": 2
+        },
+        "PPBR": {
+            "data_root": "data/PPBR",
+            "measure_name": "Y",
+            "num_classes": 0
+        },
+        "Caco2": {
+            "data_root": "data/Caco2",
+            "measure_name": "Y",
+            "num_classes": 0
+        },        
+        "esol": {
+            "data_root": "data/esol",
+            "measure_name": "measured log solubility in mols per litre",
+            "num_classes": 0
+        },        
+        "MIC": {
+            "data_root": "data/MIC",
+            "measure_name": "BINARY_ACTIVITY",
+            "num_classes": 2
+        },
+        "zinc": {
+            "data_root": "data/zinc",
+            "measure_name": "Y",
+            "num_classes": 2
+        }
+    },
+    "result": {
+        "pretrain_path": "result/pretrain_result",
+        "finetune_path": "result/finetune_result",
+        "test_path": "result/test_result"
+    },
+    "pretrain": {
+        "batch_size": 8,
+        "num_workers": 4,
+        "epochs": 5,
+        "lr_start": 1e-4,
+        "d_dropout": 0
+    },
+    "finetune": {
+        "batch_size":24
+    },
+    "mpnn": {
+        "graph": {
+            "name": "MPNN",
+            "gin_hidden_dim": 768,
+            "gin_num_layers": 5,
+            "drop_ratio": 0.0,
+            "graph_pooling": "sum",
+            "graph_self": false,
+            "max_n_nodes": -1,
+            "bert_dropout": 0.0,
+            "bert_hidden_dim": 1024,
+            "output_dim": 302,
+            "projection_dim": 256,
+            "param_key": "state_dict",
+            "stop_grad": false
+        },
+        "projection_dim": 256
+    }
+}
