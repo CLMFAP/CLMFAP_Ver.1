@@ -9,11 +9,17 @@ For fine-tuning, you need to provide the pretrained model path parameter "model_
 We provide pip package list as a reference for the Python environment. Below are some of the main packages along with installation tips for certain packages.
 
 How to use this model to predict any molecules:
-1, Create Environment:
+
+1. Create Environment:
+
 1.1 For local desktop environment, please refer the 'local_pip_list.txt'
+
 1.2 For the compute canada, please refer the 'canada_pip_list.txt'
+
 1.3 main packages:
+
 1.3.1
+
 pip install transformers
 pip install rdkit
 pip install torch-scatter
@@ -25,6 +31,7 @@ pip install pytorch_lightning
 pip install pytorch-fast-transformers
 
 1.3.2 install apex:
+
 git clone https://github.com/NVIDIA/apex
 cd apex
 git checkout 22.04-dev
@@ -38,22 +45,32 @@ string_classes = str
 python -m pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 
 1.3.3 install pytorch-fast-transformers:
+
 https://github.com/idiap/fast-transformers/issues/117
 
-1.3.4 install visualizer
+1.3.4 install visualizer:
+
 git clone https://github.com/luo3300612/Visualizer.git
 cd Visualizer
 pip install bytecode
 python setup.py install
 
-2, Prepare dataset:
+2. Prepare dataset:
+
 2.1 Process the data to only keep smiles and name the file test.csv with head "smiles".
+
 2.2 Move the file to data/zinc folder.
 
-3, Predicting:
+3. Predicting:
+
 3.1 Run the `run_prediction.sh` for local desktop environment.
+
 3.2 Run the `run_prediction_remote.sh` for the compute canada.
+
 3.3 The prediction result will be saved at "result/test_result/results_test.csv"
 
-4, Citation
-`G Zhou*, S Janarthanan*, Y Lu, P Hu. CL-MFAP: A contrastive learning-based multimodal foundation model for molecular property prediction and antibiotic screening. The Thirteenth International Conference on Learning Representations (ICLR 2025). April 24-28, 2025, Singapore. (* Equally contributed)`
+4. Citation:
+
+```
+G Zhou*, S Janarthanan*, Y Lu, P Hu. CL-MFAP: A contrastive learning-based multimodal foundation model for molecular property prediction and antibiotic screening. The Thirteenth International Conference on Learning Representations (ICLR 2025). April 24-28, 2025, Singapore. (* Equally contributed)
+```
