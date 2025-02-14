@@ -54,3 +54,6 @@ python setup.py install
 3.1 Run the `run_prediction.sh` for local desktop environment.
 3.2 Run the `run_prediction_remote.sh` for the compute canada.
 3.3 The prediction result will be saved at "result/test_result/results_test.csv"
+
+4, Citation
+`G Zhou*, S Janarthanan*, Y Lu, P Hu. CL-MFAP: A contrastive learning-based multimodal foundation model for molecular property prediction and antibiotic screening. The Thirteenth International Conference on Learning Representations (ICLR 2025). April 24-28, 2025, Singapore. (* Equally contributed)`
